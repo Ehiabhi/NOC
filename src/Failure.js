@@ -1,4 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { Button, Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
+import {
+  UtilsUpdateUI,
+  UtilsUpdateChangeHandler,
+  apiCaller,
+} from "./Utilities";
+import FormTable from "./FormTable";
+import InputForm from "./InputForm";
+import ExcelDownloader from "./ExcelDownloader";
 
 export default function Failure() {
   const [ticketList, setTicketList] = useState([]);
@@ -7,8 +16,24 @@ export default function Failure() {
     nodeB: "",
     vendor: "",
     timeDown: "",
+    timeUp: "",
     OFCsiteWithPowerIssue: "",
     byWhom: "",
+    // deleteConfirm: false,
+  });
+  const [modal, setModal] = useState(false);
+  const [hideTimeUp, setHideTimeUp] = useState(false);
+  const [updateFormData, setUpdateFormData] = useState({
+    id: "",
+    nodeA: "",
+    nodeB: "",
+    vendor: "",
+    timeDown: "",
+    timeUp: "",
+    OFCsiteWithPowerIssue: "",
+    byWhom: "",
+    COF: "",
+    action: "",
   });
 
   useEffect(() => {
@@ -17,258 +42,272 @@ export default function Failure() {
     }
   });
 
-  const onChangeHandler = (e) => {
-    const name = e.target.name;
-    const value = e.target.value;
-    setFormData((prevState) => {
-      return {
-        ...prevState,
-        [name]: typeof value === "string" ? value.toUpperCase() : value,
-      };
-    });
+  const toggle = (id, visible) => {
+    if (id) {
+      // Populate modal form with predefined values from ticketList state.
+      setUpdateFormData(() => {
+        const val = ticketList.find((entry) => entry._id === id);
+        return {
+          _id: id,
+          nodeA: val.nodeA,
+          nodeB: val.nodeB,
+          vendor: val.vendor,
+          timeDown: val.timeDown,
+          // No need to set value of timeUp since it was never up.
+          OFCsiteWithPowerIssue: val.OFCsiteWithPowerIssue,
+          byWhom: val.byWhom,
+          COF: val.COF,
+          action: val.action,
+        };
+      });
+    }
+    setHideTimeUp(visible);
+    setModal(!modal);
   };
 
-  const updateUi = (res) => {
-    res &&
-      res.json().then((data) => {
-        const reversedData = data.reverse();
-        setTicketList(reversedData);
+  const updateLink = () => {
+    apiCaller("/updateFailure", updateFormData, "Failed to update ticket, ")
+      .then((response) => {
+        if (response.status === 200) {
+          UtilsUpdateUI(response, setTicketList);
+        }
+      })
+      .catch((err) => {
+        alert(err.message);
       });
+    toggle();
   };
 
   const registerFailure = (event, data) => {
     event.preventDefault();
-    fetch("/registerFailure", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
+    apiCaller("/registerFailure", data, "Failed to register ticket, ")
       .then((response) => {
         if (response.status === 200) {
-          updateUi(response);
+          UtilsUpdateUI(response, setTicketList);
         }
       })
       .catch((err) => {
-        alert("Failed to register ticket, " + err);
+        alert(err.message);
       });
   };
 
   const deleteTicket = (_id) => {
+    if (!formData.deleteConfirm) {
+      if (
+        !window.confirm(
+          "Are you sure you want to delete link?\nThis action is irreversible."
+        )
+      )
+        return false;
+    }
     const id = { _id: _id };
-    fetch("/deleteTicket", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(id),
-    })
+    apiCaller("/deleteTicket", id, "Failed to delete ticket, ")
       .then((response) => {
         if (response.status === 200) {
-          updateUi(response);
+          UtilsUpdateUI(response, setTicketList);
         }
       })
       .catch((err) => {
-        alert("Failed to delete ticket, " + err);
+        alert(err.message);
       });
   };
 
   const getAllTicket = () => {
-    fetch("/getTable", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    })
+    apiCaller("/getTable", undefined, "Failed to fetch all ticket, ")
       .then((response) => {
         if (response.status === 200) {
-          updateUi(response);
+          UtilsUpdateUI(response, setTicketList);
         }
       })
       .catch((err) => {
-        alert("Failed to fetch all ticket, " + err);
+        alert(err.message);
       });
   };
 
-  const downloadExcelFile = (e) => {
-    e.preventDefault();
-    fetch("/downloadFile", {
-      method: "POST",
-    })
+  const closeTicket = (_id) => {
+    const id = { _id: _id };
+    const val = ticketList.find((entry) => entry._id === _id);
+
+    if (val.timeUp !== "") {
+      alert("Ticket has been declared up");
+      return false;
+    }
+
+    if (val.COF.search("KNOW") !== -1 || val.action.search("STATE/TX") !== -1) {
+      if (window.confirm("Do you want to update link?")) {
+        toggle(_id);
+      }
+    }
+
+    apiCaller("/closeTicket", id, "Failed to delete ticket, ")
       .then((response) => {
         if (response.status === 200) {
-          console.log("Download started");
+          UtilsUpdateUI(response, setTicketList);
         }
       })
       .catch((err) => {
-        alert("Failed to fetch all ticket, " + err);
+        alert(err.message);
       });
   };
 
   return (
     <>
-      <h1>Register Failure</h1>
-      <div className="row contact-form">
-        <div className="col-sm-12">
+      <Modal isOpen={modal} toggle={() => toggle()}>
+        <ModalHeader toggle={() => toggle()}>Update Link</ModalHeader>
+        <ModalBody>
           <form
             className="form-horizontal"
             onSubmit={(e) => registerFailure(e, formData)}
             method="POST"
           >
             <div className="form-group">
-              <div className="col-sm-2">
+              <div className="col-sm-12">
                 <input
                   type="text"
                   className="form-control"
-                  id="fullname"
                   placeholder="Terminal A"
                   name="nodeA"
-                  onChange={(e) => onChangeHandler(e)}
-                  value={formData.nodeA}
+                  onChange={(e) =>
+                    UtilsUpdateChangeHandler(e, setUpdateFormData)
+                  }
+                  value={updateFormData.nodeA}
                   required
                 />
               </div>
-              <div className="col-sm-2">
+              <div className="col-sm-12">
                 <input
                   type="text"
                   className="form-control"
-                  id="fullname"
                   placeholder="Terminal B"
                   name="nodeB"
-                  onChange={(e) => onChangeHandler(e)}
-                  value={formData.nodeB}
+                  onChange={(e) =>
+                    UtilsUpdateChangeHandler(e, setUpdateFormData)
+                  }
+                  value={updateFormData.nodeB}
                   required
                 />
               </div>
-              <div className="col-sm-2">
+              <div className="col-sm-12">
                 <input
                   type="text"
                   className="form-control"
-                  id="fullname"
                   placeholder="Vendor"
                   name="vendor"
-                  onChange={(e) => onChangeHandler(e)}
-                  value={formData.vendor}
+                  onChange={(e) =>
+                    UtilsUpdateChangeHandler(e, setUpdateFormData)
+                  }
+                  value={updateFormData.vendor}
                   required
                 />
               </div>
-              <div className="col-sm-2">
+              <div className="col-sm-12">
                 <input
                   type="text"
                   className="form-control"
-                  id="fullname"
-                  placeholder="From"
                   name="timeDown"
-                  onChange={(e) => onChangeHandler(e)}
-                  value={formData.timeDown}
+                  onChange={(e) =>
+                    UtilsUpdateChangeHandler(e, setUpdateFormData)
+                  }
+                  value={updateFormData.timeDown}
+                />
+              </div>
+              <div className="col-sm-12">
+                <input
+                  type="datetime-local"
+                  className="form-control"
+                  name="timeUp"
+                  onChange={(e) =>
+                    UtilsUpdateChangeHandler(e, setUpdateFormData)
+                  }
+                  value={updateFormData.timeUp}
+                  hidden={hideTimeUp}
                   required
                 />
               </div>
-              <div className="col-sm-2">
+              <div className="col-sm-12">
                 <input
                   type="text"
                   className="form-control"
-                  id="fullname"
                   placeholder="Site with power issue"
                   name="OFCsiteWithPowerIssue"
-                  onChange={(e) => onChangeHandler(e)}
-                  value={formData.OFCsiteWithPowerIssue}
+                  onChange={(e) =>
+                    UtilsUpdateChangeHandler(e, setUpdateFormData)
+                  }
+                  value={updateFormData.OFCsiteWithPowerIssue}
                 />
               </div>
-              <div className="col-sm-2">
+              <div className="col-sm-12">
                 <input
                   type="text"
                   className="form-control"
-                  id="fullname"
                   placeholder="By Whom"
                   name="byWhom"
-                  onChange={(e) => onChangeHandler(e)}
-                  value={formData.byWhom}
+                  onChange={(e) =>
+                    UtilsUpdateChangeHandler(e, setUpdateFormData)
+                  }
+                  value={updateFormData.byWhom}
                   required
                 />
               </div>
-            </div>
-            <div className="form-group">
-              <div className="col-sm-offset-2 col-sm-12">
-                <button
-                  type="submit"
-                  className="btn btn-outline-success form-button"
-                >
-                  Submit
-                </button>
+              <div className="col-sm-12">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Cause of failure"
+                  name="COF"
+                  onChange={(e) =>
+                    UtilsUpdateChangeHandler(e, setUpdateFormData)
+                  }
+                  value={updateFormData.COF}
+                  required
+                />
+              </div>
+              <div className="col-sm-12">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Action taken"
+                  name="action"
+                  onChange={(e) =>
+                    UtilsUpdateChangeHandler(e, setUpdateFormData)
+                  }
+                  value={updateFormData.action}
+                  required
+                />
               </div>
             </div>
           </form>
-          {/* <form
-            className="form-horizontal"
-            onSubmit={(e) => downloadExcelFile(e)}
-            method="POST"
-          >
-            <div className="form-group">
-              <div className="col-sm-offset-2 col-sm-12">
-                <button
-                  type="submit"
-                  className="btn btn-outline-success form-button"
-                >
-                  Download Excel File
-                </button>
-              </div>
-            </div>
-          </form> */}
-          <a href="/downloadFile" download>
-            Download File
-          </a>
+        </ModalBody>
+        <ModalFooter>
+          <Button color="primary" onClick={updateLink}>
+            Update entry
+          </Button>{" "}
+          <Button color="secondary" onClick={() => toggle()}>
+            Cancel
+          </Button>
+        </ModalFooter>
+      </Modal>
+      <h1 className="text-center">Fiber Failure Management System</h1>
+      <div className="row contact-form">
+        <div className="col-sm-12">
+          <InputForm
+            UtilsUpdateChangeHandler={UtilsUpdateChangeHandler}
+            setFormData={setFormData}
+            formData={formData}
+            registerFailure={registerFailure}
+          />
+          <ExcelDownloader ticketList={ticketList} />
           {ticketList.length === 0 ? (
             <h1 style={{ textAlign: "center" }}>
               There are no entries to display
             </h1>
           ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Terminal A</th>
-                  <th>Terminal B</th>
-                  <th>Vendor</th>
-                  <th>Impact</th>
-                  <th>Route</th>
-                  <th>From</th>
-                  <th>To</th>
-                  <th>TTR</th>
-                  <th>RDT</th>
-                  <th>SITE ID WITH POWER FAILURE</th>
-                  <th>PROBABLE/SPECIFIC CAUSE</th>
-                  <th>ACTION TAKEN</th>
-                  <th>BY WHOM</th>
-                  <th>SUB SYSTEM</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {ticketList.map((ticket) => {
-                  return (
-                    <tr key={ticket._id}>
-                      <td>{ticket.nodeA}</td>
-                      <td>{ticket.nodeB}</td>
-                      <td>{ticket.vendor}</td>
-                      <td>{ticket.impact}</td>
-                      <td>{ticket.route}</td>
-                      <td>{ticket.timeDown}</td>
-                      <td>{ticket.timeUp}</td>
-                      <td>{ticket.TTR}</td>
-                      <td>{ticket.RDT}</td>
-                      <td>{ticket.siteIDWithPowerFailure}</td>
-                      <td>{ticket.COF}</td>
-                      <td>{ticket.action}</td>
-                      <td>{ticket.byWhom}</td>
-                      <td>{ticket.subSystem}</td>
-                      <td>
-                        <button
-                          className="btn btn-outline-danger"
-                          onClick={() => deleteTicket(ticket._id)}
-                        >
-                          Delete Ticket
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <FormTable
+              ticketList={ticketList}
+              toggle={toggle}
+              closeTicket={closeTicket}
+              deleteTicket={deleteTicket}
+            />
           )}
         </div>
       </div>
