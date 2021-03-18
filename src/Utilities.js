@@ -39,6 +39,8 @@ function sortDes(arr, field) {
 export const UtilsUpdateChangeHandler = (e, stateUpdaterFunc) => {
   const name = e.target.name;
   const value = e.target.value;
+  // console.log("Name " + name);
+  // console.log("Value " + value);
   stateUpdaterFunc((prevState) => {
     return {
       ...prevState,
@@ -55,7 +57,7 @@ export const UtilsUpdateUI = async (response, stateUpdateFunc) => {
 export const apiCaller = async (route, data, errMess) => {
   const response = await fetch(route, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(data),
   });
 

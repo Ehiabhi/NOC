@@ -1,17 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Button, Modal, ModalHeader, ModalBody, ModalFooter } from "reactstrap";
+import { Container, AppBar, Typography } from "@material-ui/core";
 import {
   UtilsUpdateUI,
   UtilsUpdateChangeHandler,
   apiCaller,
 } from "./Utilities";
-import EntryTable from "./EntryTable";
+import FormTable from "./FormTable";
 import InputForm from "./InputForm";
 import ExcelDownloader from "./ExcelDownloader";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import RestoreIcon from "@material-ui/icons/Restore";
-import anime from "animejs/lib/anime.es";
 
 export default function Failure() {
   const [ticketList, setTicketList] = useState([]);
@@ -26,7 +23,7 @@ export default function Failure() {
     // deleteConfirm: false,
   });
   const [modal, setModal] = useState(false);
-  let [hideTimeUp, setHideTimeUp] = useState(true);
+  const [hideTimeUp, setHideTimeUp] = useState(false);
   const [updateFormData, setUpdateFormData] = useState({
     id: "",
     nodeA: "",
@@ -46,23 +43,18 @@ export default function Failure() {
     }
   });
 
-  const toggle = (id) => {
+  const toggle = (id, visible) => {
     if (id) {
       // Populate modal form with predefined values from ticketList state.
       setUpdateFormData(() => {
         const val = ticketList.find((entry) => entry._id === id);
-
-        if (val) {
-          val.timeUp !== "" ? setHideTimeUp(false) : setHideTimeUp(true);
-        }
-
         return {
           _id: id,
           nodeA: val.nodeA,
           nodeB: val.nodeB,
           vendor: val.vendor,
           timeDown: val.timeDown,
-          // No need to update form with value of timeUp since it may be changed.
+          // No need to set value of timeUp since it was never up.
           OFCsiteWithPowerIssue: val.OFCsiteWithPowerIssue,
           byWhom: val.byWhom,
           COF: val.COF,
@@ -70,7 +62,7 @@ export default function Failure() {
         };
       });
     }
-
+    setHideTimeUp(visible);
     setModal(!modal);
   };
 
@@ -79,12 +71,10 @@ export default function Failure() {
       .then((response) => {
         if (response.status === 200) {
           UtilsUpdateUI(response, setTicketList);
-          notify("Ticket updated successfully", "success");
         }
       })
       .catch((err) => {
-        notify("Ticket could not be updated", "error");
-        console.log(err.message);
+        alert(err.message);
       });
     toggle();
   };
@@ -95,12 +85,10 @@ export default function Failure() {
       .then((response) => {
         if (response.status === 200) {
           UtilsUpdateUI(response, setTicketList);
-          notify("Ticket add successfully", "success");
         }
       })
       .catch((err) => {
-        notify("Ticket could not be added", "error");
-        console.log(err.message);
+        alert(err.message);
       });
   };
 
@@ -118,12 +106,10 @@ export default function Failure() {
       .then((response) => {
         if (response.status === 200) {
           UtilsUpdateUI(response, setTicketList);
-          notify("Ticket deleted successfully", "info");
         }
       })
       .catch((err) => {
-        notify("Ticket could not be deleted", "error");
-        console.log(err.message);
+        alert(err.message);
       });
   };
 
@@ -135,14 +121,18 @@ export default function Failure() {
         }
       })
       .catch((err) => {
-        notify("Tickets could not be fetched from database", "warning");
-        console.log(err.message);
+        alert(err.message);
       });
   };
 
   const closeTicket = (_id) => {
     const id = { _id: _id };
     const val = ticketList.find((entry) => entry._id === _id);
+
+    if (val.timeUp !== "") {
+      alert("Ticket has been declared up");
+      return false;
+    }
 
     if (val.COF.search("KNOW") !== -1 || val.action.search("STATE/TX") !== -1) {
       if (window.confirm("Do you want to update link?")) {
@@ -154,61 +144,15 @@ export default function Failure() {
       .then((response) => {
         if (response.status === 200) {
           UtilsUpdateUI(response, setTicketList);
-          notify("Ticket closed successfully", "success");
         }
       })
       .catch((err) => {
-        notify("Ticket could not be closed", "error");
-        console.log(err.message);
+        alert(err.message);
       });
   };
 
-  const handleDoubleClick = () => {
-    document.getElementById("restore").style.display = "none";
-    anime({
-      targets: document.getElementById("restore"),
-      left: "0px",
-      duration: 5000,
-    });
-    document.getElementById("_dis1").style.display = "block";
-    document.getElementById("_dis2").style.display = "block";
-    document.getElementById("table_row").style.minHeight = "50vh";
-  };
-
-  const hideElements = () => {
-    const test = document.getElementById("_dis1").style.display !== "none";
-    document.getElementById("_dis1").style.display = "none";
-    document.getElementById("_dis2").style.display = "none";
-    document.getElementById("table_row").style.minHeight = "80vh";
-
-    if (test) {
-      if (window.innerWidth > 960) {
-        alert(
-          "Double-click on the white spaced area to restore form and buttons."
-        );
-      } else {
-        alert(
-          "Click on the restore button at the bottom right corner to restore form and buttons."
-        );
-        document.getElementById("restore").style.display = "block";
-        anime({
-          targets: document.getElementById("restore"),
-          left: "240px",
-          duration: 1500,
-        });
-      }
-    }
-  };
-
-  const notify = (mess, state) => toast[state](mess);
-
   return (
-    <div className="container" id="wrapper" onDoubleClick={handleDoubleClick}>
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={true}
-      />
+    <Container id="wrapper">
       <Modal isOpen={modal} toggle={() => toggle()}>
         <ModalHeader toggle={() => toggle()}>Update Link</ModalHeader>
         <ModalBody>
@@ -344,35 +288,27 @@ export default function Failure() {
           </Button>
         </ModalFooter>
       </Modal>
-      <div className="row">
-        <div className="col-xs-12" id="major_header">
-          <h1>Fiber Failure Management System</h1>
-        </div>
-      </div>
-      <div className="row" id="_dis1">
-        <div className="col-xs-12 col-md-6">
+      <AppBar position="static" color="inherit">
+        <Typography variant="h2" align="center">
+          Fiber Failure Management System
+        </Typography>
+      </AppBar>
+      {/* <h1 className="text-center">Fiber Failure Management System</h1> */}
+      <div className="row contact-form">
+        <div className="col-sm-12">
           <InputForm
             UtilsUpdateChangeHandler={UtilsUpdateChangeHandler}
             setFormData={setFormData}
             formData={formData}
             registerFailure={registerFailure}
           />
-        </div>
-      </div>
-      <div className="row">
-        <div className="col-xs-12" id="download_btn">
           <ExcelDownloader ticketList={ticketList} />
-        </div>
-      </div>
-      <button id="restore" onClick={handleDoubleClick}>
-        <RestoreIcon />
-      </button>
-      <div onScroll={hideElements} className="row table_row" id="table_row">
-        <div className="col-xs-12 table_info">
           {ticketList.length === 0 ? (
-            <h1>There are no entries to display</h1>
+            <h1 style={{ textAlign: "center" }}>
+              There are no entries to display
+            </h1>
           ) : (
-            <EntryTable
+            <FormTable
               ticketList={ticketList}
               toggle={toggle}
               closeTicket={closeTicket}
@@ -381,6 +317,6 @@ export default function Failure() {
           )}
         </div>
       </div>
-    </div>
+    </Container>
   );
 }

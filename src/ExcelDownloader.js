@@ -10,9 +10,9 @@ export default function InputForm({ ticketList }) {
       filename="OFC REPORT"
       element={
         ticketList.length === 0 ? null : (
-          <div className="mb-3">
+          <div className="mb-3" id="_dis2">
             <div className="col-sm-offset-2 col-sm-12">
-              <button className="btn btn-outline-success form-button">
+              <button className="btn btn-success btn-lg form-button">
                 Download Excel File
               </button>
             </div>

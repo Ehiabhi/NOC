@@ -8,12 +8,13 @@ export default function InputForm({
 }) {
   return (
     <form
+      id="form"
       className="form-horizontal"
       onSubmit={(e) => registerFailure(e, formData)}
       method="POST"
     >
       <div className="form-group">
-        <div className="col-sm-2">
+        <div className="col-xs-12">
           <input
             type="text"
             className="form-control"
@@ -24,7 +25,7 @@ export default function InputForm({
             required
           />
         </div>
-        <div className="col-sm-2">
+        <div className="col-xs-12">
           <input
             type="text"
             className="form-control"
@@ -35,7 +36,7 @@ export default function InputForm({
             required
           />
         </div>
-        <div className="col-sm-2">
+        <div className="col-xs-12">
           <input
             type="text"
             className="form-control"
@@ -46,7 +47,7 @@ export default function InputForm({
             required
           />
         </div>
-        <div className="col-sm-2">
+        <div className="col-xs-12">
           <input
             type="datetime-local"
             className="form-control"
@@ -56,7 +57,7 @@ export default function InputForm({
             value={formData.timeDown}
           />
         </div>
-        <div className="col-sm-2">
+        <div className="col-xs-12">
           <input
             type="text"
             className="form-control"
@@ -66,7 +67,7 @@ export default function InputForm({
             value={formData.OFCsiteWithPowerIssue}
           />
         </div>
-        <div className="col-sm-2">
+        <div className="col-xs-12">
           <input
             type="text"
             className="form-control"
@@ -77,21 +78,8 @@ export default function InputForm({
             required
           />
         </div>
-        {/* <div className="col-sm-2">
-        <label htmlFor="">Delete Ticket without confirmation</label>
-        <input
-          type="checkbox"
-          className="form-control"
-          id="deleteConfirm"
-          name="deleteConfirm"
-          onChange={(e) => UtilsUpdateChangeHandler(e)}
-          value={formData.deleteConfirm}
-        />
-      </div> */}
-      </div>
-      <div className="form-group">
-        <div className="col-sm-offset-2 col-sm-12">
-          <button type="submit" className="btn btn-outline-success form-button">
+        <div className="col-sm-12" id="button">
+          <button type="submit" className="btn btn-success btn-lg">
             Submit
           </button>
         </div>
