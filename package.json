@@ -1,0 +1,22 @@
+{
+  "name": "noc",
+  "version": "1.0.0",
+  "description": "Report Update",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon index.js"
+  },
+  "author": "Ehis",
+  "license": "ISC",
+  "engines": {
+    "node": "12.16.1"
+  },
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "dateformat": "^4.4.1",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "mongoose": "^5.11.19"
+  }
+}
