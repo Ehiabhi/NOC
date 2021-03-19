@@ -182,21 +182,19 @@ export default function Failure() {
     document.getElementById("table_row").style.minHeight = "80vh";
 
     if (test) {
-      if (window.innerWidth > 960) {
-        alert(
-          "Double-click on the white spaced area to restore form and buttons."
-        );
-      } else {
-        alert(
-          "Click on the restore button at the bottom right corner to restore form and buttons."
-        );
-        document.getElementById("restore").style.display = "block";
-        anime({
-          targets: document.getElementById("restore"),
-          left: "240px",
-          duration: 1500,
-        });
-      }
+      document.getElementById("restore").style.display = "block";
+      anime({
+        targets: document.getElementById("restore"),
+        left: "240px",
+        duration: 1500,
+      });
+      setTimeout(
+        () =>
+          alert(
+            "Click on the restore button at the bottom right corner to restore form and buttons."
+          ),
+        3000
+      );
     }
   };
 
@@ -367,7 +365,11 @@ export default function Failure() {
       <button id="restore" onClick={handleDoubleClick}>
         <RestoreIcon />
       </button>
-      <div onScroll={hideElements} className="row table_row" id="table_row">
+      <div
+        onScroll={window.innerWidth <= 960 ? hideElements : undefined}
+        className="row table_row"
+        id="table_row"
+      >
         <div className="col-xs-12 table_info">
           {ticketList.length === 0 ? (
             <h1>There are no entries to display</h1>

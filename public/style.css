@@ -2,14 +2,10 @@ html, body, #root {
     background-color: green;
 }
 
-body {
-    background-size: 20% auto;
-}
-
 #wrapper {
     background: url("./images/glologo.jfif") no-repeat center 15%;
-    width: 100%;
     background-color: white;
+    width: 100%;
     margin-top: 1%;
     margin-bottom: 1%;
     border-radius: 10px;
